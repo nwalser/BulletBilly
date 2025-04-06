@@ -63,9 +63,9 @@ class SDLogger
 {
 public:
     // Increase buffer size for higher throughput / less overflow
-    // static const size_t BUFFER_SIZE = 8192; // 8k floats = 32kB
+    static const size_t BUFFER_SIZE = 8192; // 8k floats = 32kB
     // static const size_t BUFFER_SIZE = 4096; // 4k floats = 16kB
-    static const size_t BUFFER_SIZE = 2048; // 2k floats = 8kB
+    // static const size_t BUFFER_SIZE = 2048; // 2k floats = 8kB
     // static const size_t BUFFER_SIZE = 1024; // e.g. 4kB
 
     /**
