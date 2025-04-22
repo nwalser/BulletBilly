@@ -1,5 +1,6 @@
 #include "mbed.h"
 
+#include "LIDAR.h"
 
 // pin mappings
 #include "PESBoardPinMap.h"
@@ -22,6 +23,10 @@ const float counts_per_turn = 64;
 DCMotor motor(PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, gear_ratio, kn, voltage_max, counts_per_turn);
 
 DigitalIn button(BUTTON1);
+
+// lidar
+UnbufferedSerial* serial = new UnbufferedSerial(PA_0, PA_1);
+LIDAR* lidar = new LIDAR(*serial);
 
 int main()
 {
