@@ -45,7 +45,6 @@ class LIDAR {
         char                dataCounter;
         char                data[DATA_SIZE];
         float               distances[360];     // measured distance for every angle value, given in [m]
-        bool                simulation;         // flag to indicate if scans are only simulated
         
         void    receive();
 };

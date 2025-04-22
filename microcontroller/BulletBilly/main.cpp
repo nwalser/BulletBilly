@@ -1,9 +1,11 @@
 #include "mbed.h"
 
+/*
 #include "LIDAR.h"
 
 // pin mappings
 #include "PESBoardPinMap.h"
+
 
 // imu
 #include "IMU.h"
@@ -25,13 +27,90 @@ DCMotor motor(PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, gear_ratio, kn, voltage_max, 
 DigitalIn button(BUTTON1);
 
 // lidar
-UnbufferedSerial* serial = new UnbufferedSerial(PA_0, PA_1);
-LIDAR* lidar = new LIDAR(*serial);
+//UnbufferedSerial serial(PA_9, PA_10);
+//LIDAR* lidar = new LIDAR(*serial);
+*/
 
+
+DigitalIn button(BUTTON1);
+
+UnbufferedSerial serial1(USBTX, USBRX, 115200);
+UnbufferedSerial serial2(PC_10, PC_11, 115200);
+
+void forward_A_to_B() {
+    char c;
+    while (serial1.read(&c, 1) == 1) {
+        serial2.write(&c, 1);
+    }
+}
+
+void forward_B_to_A() {
+    char c;
+    while (serial2.read(&c, 1) == 1) {
+        serial1.write(&c, 1);
+    }
+}
+
+int main() {
+    serial1.format(8, SerialBase::None, 1);
+    serial2.format(8, SerialBase::None, 1);
+
+    serial1.attach(&forward_A_to_B);
+    serial2.attach(&forward_B_to_A);
+
+    while (button) {
+        char c = 'd';
+        serial1.write(&c, 1);
+
+        ThisThread::sleep_for(1s);
+    }
+
+    // write start
+    char start[] = { 165, 32 };
+    serial2.write(&start, 2);
+
+    while (1) {
+        char c = 'h';
+        serial1.write(&c, 1);
+
+        ThisThread::sleep_for(1s);
+    }
+}
+
+/*
 int main()
 {
-    while(button) { };
+    // initialize serial interface
+    //serial.baud(115200);
+    //serial.format(8, SerialBase::None, 1);
+    
+    // start scanning
+    //char start[] = {165, 32};
+    //serial.write(&start, 2);
 
+
+    while(button){
+
+    }
+
+
+    //char stop[] = {165, 37};
+    //serial.write(&stop, 2);
+
+
+    while(true) {
+        deque<Point> points = lidar->getScan();
+        float count = 0;
+
+        for(int i = 0; i < points.size(); i++){
+            count += points[i].distance();
+        }
+
+        printf("%.2f \n", count);
+    }
+    */
+
+    /*
     enable_motors = 1;
     motor.setVelocity(motor.getMaxVelocity() * 0.03f);
     motor.enableMotionPlanner();
@@ -41,3 +120,4 @@ int main()
         printf("%.2f \n", rotation);
     }
 }
+*/

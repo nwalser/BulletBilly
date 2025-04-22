@@ -25,9 +25,7 @@ LIDAR::LIDAR(UnbufferedSerial& serial) : serial(serial) {
     dataCounter = 0;
     
     for (unsigned short i = 0; i < 360; i++) distances[i] = DEFAULT_DISTANCE;
-    
-    simulation = true;
-    
+        
     // start serial interrupt
     
     serial.attach(callback(this, &LIDAR::receive), UnbufferedSerial::RxIrq);
@@ -58,19 +56,7 @@ deque<Point> LIDAR::getScan() {
     deque<Point> scan;
     
     for (unsigned short i = 0; i < 360; i++) {
-        
-        if (simulation) {
-            
-            // use simulated distances, because LIDAR is not available
-            
-            scan.push_back(Point(DISTANCES[i]-0.002f*(rand()%10), (float)i*M_PI/180.0f));
-            
-        } else {
-            
-            // use latest measurements from actual LIDAR
-            
-            scan.push_back(Point(distances[i], (float)i*M_PI/180.0f));
-        }
+        scan.push_back(Point(distances[i], (float)i*M_PI/180.0f));
     }
     
     return scan;
@@ -170,7 +156,6 @@ void LIDAR::receive() {
                 // reset data counter and simulation flag
                 
                 dataCounter = 0;
-                simulation = false;
             }
         }
     }
