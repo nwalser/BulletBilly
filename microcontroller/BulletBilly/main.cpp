@@ -1,4 +1,48 @@
+#include "LIDAR.h"
 #include "mbed.h"
+#include "PESBoardPinMap.h"
+#include "DCMotor.h"
+#include "IMU.h"
+
+// motor
+const float voltage_max = 12.0f;
+const float gear_ratio = 50.0f;
+const float kn = 200.0f / 12.0f;
+const float counts_per_turn = 64;
+DCMotor motor(PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, gear_ratio, kn, voltage_max, counts_per_turn);
+DigitalOut motors_enable(PB_ENABLE_DCMOTORS);
+
+// encoder
+EncoderCounter encoder(PB_ENC_A_M2, PB_ENC_B_M2);
+
+// lidar
+UnbufferedSerial serial(PA_9, PA_10);
+LIDAR lidar(serial);
+
+// imu
+ImuData imu_data;
+IMU imu(PB_IMU_SDA, PB_IMU_SCL);
+
+// button
+DigitalIn button(BUTTON1);
+
+
+int main() {
+    while(button){}
+
+    motors_enable.write(true);
+
+    motor.setVelocity(motor.getMaxVelocity() * 0.03f);
+    motor.enableMotionPlanner();
+
+    while(true){
+        imu_data = imu.getImuData();
+        
+        float rotation = motor.getRotation();
+        printf("%.2f %.2d %.2f \n", rotation, encoder.read(), imu_data.tilt);
+    }
+}
+
 
 /*
 #include "LIDAR.h"
@@ -31,7 +75,7 @@ DigitalIn button(BUTTON1);
 //LIDAR* lidar = new LIDAR(*serial);
 */
 
-
+/*
 DigitalIn button(BUTTON1);
 
 UnbufferedSerial serial1(USBTX, USBRX, 115200);
@@ -76,6 +120,7 @@ int main() {
         ThisThread::sleep_for(1s);
     }
 }
+*/
 
 /*
 int main()
