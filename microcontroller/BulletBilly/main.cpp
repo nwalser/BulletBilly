@@ -1,4 +1,4 @@
-#include "LIDAR.h"
+#include "LIDAR2.h"
 #include "mbed.h"
 #include "PESBoardPinMap.h"
 #include "DCMotor.h"
@@ -16,11 +16,10 @@ DigitalOut motors_enable(PB_ENABLE_DCMOTORS);
 EncoderCounter encoder(PB_ENC_A_M2, PB_ENC_B_M2);
 
 // lidar
-UnbufferedSerial serial(PA_9, PA_10);
-LIDAR lidar(serial);
+UnbufferedSerial serial(PC_10, PC_11);
+LIDAR2 lidar(serial);
 
 // imu
-ImuData imu_data;
 IMU imu(PB_IMU_SDA, PB_IMU_SCL);
 
 // button
@@ -28,18 +27,21 @@ DigitalIn button(BUTTON1);
 
 
 int main() {
-    while(button){}
+    // while(button){}
 
-    motors_enable.write(true);
+    // motors_enable.write(true);
 
-    motor.setVelocity(motor.getMaxVelocity() * 0.03f);
-    motor.enableMotionPlanner();
+    // motor.setVelocity(motor.getMaxVelocity() * 0.03f);
+    // motor.enableMotionPlanner();
 
     while(true){
-        imu_data = imu.getImuData();
-        
+        //deque<Point> points = lidar.getScan();
+        ImuData imu_data = imu.getImuData();
         float rotation = motor.getRotation();
-        printf("%.2f %.2d %.2f \n", rotation, encoder.read(), imu_data.tilt);
+        float single = lidar.getSingle();
+
+
+        printf("%.2f %.2d %.2f %.2f \n", rotation, encoder.read(), imu_data.tilt, single);
     }
 }
 
