@@ -1,7 +1,10 @@
+#pragma once
+
 #include "mbed.h"
 #include "Lidar.h"
 #include <array>
 #include <chrono>
+#include <Eigen/Dense>
 
 struct AnomalyDetectorData {
     float centerX;
@@ -18,83 +21,101 @@ struct AnomalyDetectorData {
 
 class AnomalyDetector {
 private:
-    constexpr static const std::chrono::microseconds CYCLE = 100ms;
+    constexpr static const Kernel::Clock::duration_u32 CYCLE = 1000ms;
     constexpr static const float PI = 3.1415926535897932f;
     constexpr static const float ANOMALY_THRESHOLD = 0.005f;
 
-    Ticker ticker;
+    Thread thread;
     Lidar &lidar;
 
     AnomalyDetectorData data;
+    Mutex mutex;
 
 public:
-    AnomalyDetector(Lidar &lidar) : lidar(lidar) {
-        ticker.attach(callback(this, &AnomalyDetector::run), CYCLE);
+    AnomalyDetector(Lidar &lidar) : lidar(lidar), thread(osPriorityNormal, 8192 * 2) {
+        thread.start(callback(this, &AnomalyDetector::run));
     }
 
     ~AnomalyDetector() {
-        ticker.detach();
+        thread.terminate();
     }
 
     AnomalyDetectorData getData() {
-        return data;
+        mutex.lock();
+        AnomalyDetectorData d = data;
+        mutex.unlock();
+        return d;
     }
 
 private:
-    void run() {
-        AnomalyDetectorData d;
-
-        // scan with 360 point from 0 to 360 degrees
-        d.scan = lidar.getScan();
-
-        // FIT CIRCLE
-        float sum_x = 0, sum_y = 0, sum_xx = 0, sum_yy = 0, sum_xy = 0;
+    void fitCircleLeastSquares(AnomalyDetectorData &d) {
         int N = d.scan.size();
+        Eigen::MatrixXd A(N, 3);  // Matrix A (n x 3)
+        Eigen::VectorXd B(N);     // Vector B (n x 1)
 
-        // create system
+        // Step 1: Fill matrices A and B
         for (int i = 0; i < N; ++i) {
             float angle = i * PI / 180.0;
             float r = d.scan[i];
-
             float x = r * cos(angle);
             float y = r * sin(angle);
 
-            sum_x += x;
-            sum_y += y;
-            sum_xx += x * x;
-            sum_yy += y * y;
-            sum_xy += x * y;
+            A(i, 0) = x;
+            A(i, 1) = y;
+            A(i, 2) = 1;
+            B(i) = -(x * x + y * y);
         }
 
-        // solve
-        float A = N * sum_xx - sum_x * sum_x;
-        float B = N * sum_xy - sum_x * sum_y;
-        float C = N * sum_yy - sum_y * sum_y;
-        float D = (sum_xx * sum_y - sum_x * sum_xy);
-        float E = (sum_xy * sum_y - sum_x * sum_yy);
+        // Step 2: Solve the system A * X = B using least squares
+        Eigen::Vector3d solution = A.colPivHouseholderQr().solve(B);
 
-        d.centerX = D / A;
-        d.centerY = E / A;
-        d.radius = sqrt((sum_xx + sum_yy - 2 * (d.centerX * sum_x + d.centerY * sum_y)) / N);
+        // Step 3: Extract circle parameters
+        float centerX = solution(0) / -2.0f;
+        float centerY = solution(1) / -2.0f;
+        float radius = std::sqrt(centerX * centerX + centerY * centerY - solution(2));
+
+        // Set the circle parameters
+        d.centerX = centerX;
+        d.centerY = centerY;
+        d.radius = radius;
+    }
 
 
-        // evaluate each point on circle
-        for (int i = 0; i < 360; i++) {
-            // TODO: angle is currently given in coordinates of circle, 
-            // but this should be given in coordinates of origin center
-            float angle = i * PI / 180.0;
-            float x = d.centerX + d.radius * cos(angle);
-            float y = d.centerY + d.radius * sin(angle);
-            
-            float distance = sqrt(x*x + y*y);
+    void run() {
+        while(true){
+            AnomalyDetectorData d;
 
-            d.fit[i] = distance;
-            d.offset[i] = abs(d.fit[i] - d.scan[i]);
-            d.anomaly[i] = d.offset[i] > ANOMALY_THRESHOLD;
+            // scan with 360 point from 0 to 360 degrees
+            d.scan = lidar.getScan();
 
-            d.any_anomaly |= d.anomaly[i];
+            fitCircleLeastSquares(d);
+
+            // evaluate each point on circle
+            for (int i = 0; i < 360; i++) {
+                // TODO: angle is currently given in coordinates of circle, 
+                // but this should be given in coordinates of origin center
+                float angle = i * PI / 180.0;
+                float x = d.centerX + d.radius * cos(angle);
+                float y = d.centerY + d.radius * sin(angle);
+                
+                float distance = sqrt(x*x + y*y);
+
+                d.fit[i] = distance;
+                d.offset[i] = abs(d.fit[i] - d.scan[i]);
+                d.anomaly[i] = d.offset[i] > ANOMALY_THRESHOLD;
+
+                d.any_anomaly |= d.anomaly[i];
+            }
+
+            // update data
+            mutex.lock();
+            data = d;
+            mutex.unlock();
+
+            //printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
+
+            // wait for next cycle
+            ThisThread::sleep_for(CYCLE);
         }
-
-        data = d;
     }
 };
