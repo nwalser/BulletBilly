@@ -1,8 +1,12 @@
-#include "LIDAR2.h"
 #include "mbed.h"
 #include "PESBoardPinMap.h"
+
+#include <array>
+
+#include "Lidar.h"
 #include "DCMotor.h"
 #include "IMU.h"
+#include "AnomalyDetector.h"
 
 // motor
 const float voltage_max = 12.0f;
@@ -17,13 +21,23 @@ EncoderCounter encoder(PB_ENC_A_M2, PB_ENC_B_M2);
 
 // lidar
 UnbufferedSerial serial(PC_10, PC_11);
-LIDAR2 lidar(serial);
+Lidar lidar(serial);
+AnomalyDetector anomalyDetector(lidar);
 
 // imu
 IMU imu(PB_IMU_SDA, PB_IMU_SCL);
 
 // button
 DigitalIn button(BUTTON1);
+
+
+#include <array>
+#include <numeric>
+template<size_t N>
+float average(const std::array<float, N>& arr) {
+    if (N == 0) return 0.0f;
+    return std::accumulate(arr.begin(), arr.end(), 0.0f) / N;
+}
 
 
 int main() {
@@ -38,133 +52,12 @@ int main() {
         //deque<Point> points = lidar.getScan();
         ImuData imu_data = imu.getImuData();
         float rotation = motor.getRotation();
-        float single = lidar.getSingle();
+        std::array<float, 360> single = lidar.getScan();
 
+        float aver = average(single);
 
-        printf("%.2f %.2d %.2f %.2f \n", rotation, encoder.read(), imu_data.tilt, single);
+        AnomalyDetectorData ad_data = anomalyDetector.getData();
+
+        printf("%.2f %.2d %.2f %.2f %d \n", rotation, encoder.read(), imu_data.tilt, aver, ad_data.any_anomaly);
     }
 }
-
-
-/*
-#include "LIDAR.h"
-
-// pin mappings
-#include "PESBoardPinMap.h"
-
-
-// imu
-#include "IMU.h"
-
-ImuData imu_data;
-IMU imu(PB_IMU_SDA, PB_IMU_SCL);
-
-// motor 1
-#include "DCMotor.h"
-
-DigitalOut enable_motors(PB_ENABLE_DCMOTORS);
-
-const float voltage_max = 12.0f;
-const float gear_ratio = 50.0f;
-const float kn = 200.0f / 12.0f;
-const float counts_per_turn = 64;
-DCMotor motor(PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, gear_ratio, kn, voltage_max, counts_per_turn);
-
-DigitalIn button(BUTTON1);
-
-// lidar
-//UnbufferedSerial serial(PA_9, PA_10);
-//LIDAR* lidar = new LIDAR(*serial);
-*/
-
-/*
-DigitalIn button(BUTTON1);
-
-UnbufferedSerial serial1(USBTX, USBRX, 115200);
-UnbufferedSerial serial2(PC_10, PC_11, 115200);
-
-void forward_A_to_B() {
-    char c;
-    while (serial1.read(&c, 1) == 1) {
-        serial2.write(&c, 1);
-    }
-}
-
-void forward_B_to_A() {
-    char c;
-    while (serial2.read(&c, 1) == 1) {
-        serial1.write(&c, 1);
-    }
-}
-
-int main() {
-    serial1.format(8, SerialBase::None, 1);
-    serial2.format(8, SerialBase::None, 1);
-
-    serial1.attach(&forward_A_to_B);
-    serial2.attach(&forward_B_to_A);
-
-    while (button) {
-        char c = 'd';
-        serial1.write(&c, 1);
-
-        ThisThread::sleep_for(1s);
-    }
-
-    // write start
-    char start[] = { 165, 32 };
-    serial2.write(&start, 2);
-
-    while (1) {
-        char c = 'h';
-        serial1.write(&c, 1);
-
-        ThisThread::sleep_for(1s);
-    }
-}
-*/
-
-/*
-int main()
-{
-    // initialize serial interface
-    //serial.baud(115200);
-    //serial.format(8, SerialBase::None, 1);
-    
-    // start scanning
-    //char start[] = {165, 32};
-    //serial.write(&start, 2);
-
-
-    while(button){
-
-    }
-
-
-    //char stop[] = {165, 37};
-    //serial.write(&stop, 2);
-
-
-    while(true) {
-        deque<Point> points = lidar->getScan();
-        float count = 0;
-
-        for(int i = 0; i < points.size(); i++){
-            count += points[i].distance();
-        }
-
-        printf("%.2f \n", count);
-    }
-    */
-
-    /*
-    enable_motors = 1;
-    motor.setVelocity(motor.getMaxVelocity() * 0.03f);
-    motor.enableMotionPlanner();
-
-    while(true){
-        float rotation = motor.getRotation();
-        printf("%.2f \n", rotation);
-    }
-}
-*/
