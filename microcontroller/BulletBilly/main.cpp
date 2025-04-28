@@ -12,6 +12,8 @@
 #include "Logger.h"
 
 int main() {
+    ThisThread::sleep_for(1s);
+
     // motor
     const float voltage_max = 12.0f;
     const float gear_ratio = 50.0f;
@@ -24,7 +26,7 @@ int main() {
     EncoderCounter encoder(PB_ENC_A_M2, PB_ENC_B_M2);
 
     // lidar
-    UnbufferedSerial serial(PC_10, PC_11);
+    UnbufferedSerial serial(PA_9, PA_10);
     Lidar lidar(serial);
     AnomalyDetector detector(lidar);
 
@@ -47,7 +49,6 @@ int main() {
     // motor.enableMotionPlanner();
 
     while(true){
-        //deque<Point> points = lidar.getScan();
         ImuData imu_data = imu.getImuData();
         float rotation = motor.getRotation();
         std::array<float, 360> single = lidar.getScan();

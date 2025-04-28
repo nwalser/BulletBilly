@@ -18,7 +18,7 @@ private:
     static const char QUALITY_THRESHOLD = 10;
     constexpr static const float PI = 3.1415926535897932f;
     constexpr static const float DISTANCE_THRESHOLD = 0.01f;
-    constexpr static const float DEFAULT_DISTANCE = 10.0f;
+    constexpr static const float DEFAULT_DISTANCE = 0.0f;
 
     UnbufferedSerial&       serial;
     char                    dataCounter = 0;

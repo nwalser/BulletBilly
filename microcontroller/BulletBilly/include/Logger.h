@@ -107,14 +107,26 @@ private:
             fprintf(logFile, "{");
 
             logArray(ad_data.scan);
+            fprintf(logFile, ",");
             logArray(ad_data.fit);
+            fprintf(logFile, ",");
             logArray(ad_data.offset);
+            fprintf(logFile, ",");
             logArray(ad_data.anomaly);
 
-            fprintf(logFile, "}");
+            fprintf(logFile, ",");
+            fprintf(logFile, "%.3f", ad_data.centerX);
+            fprintf(logFile, ",");
+            fprintf(logFile, "%.3f", ad_data.centerY);
+            fprintf(logFile, ",");
+            fprintf(logFile, "%.3f", ad_data.radius);
+            fprintf(logFile, ",");
+            fprintf(logFile, "%.3f", ad_data.any_anomaly);
+
+            fprintf(logFile, "}\n");
             // END ROW
 
-            ThisThread::sleep_for(1000ms);
+            ThisThread::sleep_for(200ms);
         }
     }
 

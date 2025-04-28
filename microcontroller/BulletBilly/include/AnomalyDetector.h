@@ -49,6 +49,9 @@ public:
 
 private:
     void fitCircleLeastSquares(AnomalyDetectorData &d) {
+        // TODO: skip zero values for fitting to not change result
+
+
         int N = d.scan.size();
         Eigen::MatrixXd A(N, 3);  // Matrix A (n x 3)
         Eigen::VectorXd B(N);     // Vector B (n x 1)
@@ -112,7 +115,7 @@ private:
             data = d;
             mutex.unlock();
 
-            //printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
+            printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
 
             // wait for next cycle
             ThisThread::sleep_for(CYCLE);
