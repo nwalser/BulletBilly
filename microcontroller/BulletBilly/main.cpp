@@ -41,11 +41,12 @@ int main() {
     // logging
     SDBlockDevice sd(PB_SD_MOSI, PB_SD_MISO, PB_SD_SCK, PB_SD_CS);
     FATFileSystem fs("sd");
-    Logger logger(sd, fs, detector);
 
     Localizer localizer(motor, encoder, imu);
     MissionController controller(motor, localizer, button, motorsEnable);
 
+
+    Logger logger(sd, fs, detector, localizer);
 
     // while(button){}
 
