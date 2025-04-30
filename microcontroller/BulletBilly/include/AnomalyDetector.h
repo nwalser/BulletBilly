@@ -19,9 +19,13 @@ struct AnomalyDetectorData {
     bool any_anomaly;
 };
 
+struct Point {
+    double x, y;
+};
+
 class AnomalyDetector {
 private:
-    constexpr static const Kernel::Clock::duration_u32 CYCLE = 1000ms;
+    constexpr static const Kernel::Clock::duration_u32 CYCLE = 200ms;
     constexpr static const float PI = 3.1415926535897932f;
     constexpr static const float ANOMALY_THRESHOLD = 0.005f;
 
@@ -49,40 +53,56 @@ public:
 
 private:
     void fitCircleLeastSquares(AnomalyDetectorData &d) {
-        // TODO: skip zero values for fitting to not change result
-
-
-        int N = d.scan.size();
-        Eigen::MatrixXd A(N, 3);  // Matrix A (n x 3)
-        Eigen::VectorXd B(N);     // Vector B (n x 1)
-
-        // Step 1: Fill matrices A and B
-        for (int i = 0; i < N; ++i) {
+        std::vector<Point> pts;
+        for (int i = 0; i < d.scan.size(); i+=4) {
             float angle = i * PI / 180.0;
             float r = d.scan[i];
+            
+            // skip measurements outside of range
+            if (r <= 0 || r > 1) continue;
+
             float x = r * cos(angle);
             float y = r * sin(angle);
-
-            A(i, 0) = x;
-            A(i, 1) = y;
-            A(i, 2) = 1;
-            B(i) = -(x * x + y * y);
+            pts.push_back({x, y});
         }
 
-        // Step 2: Solve the system A * X = B using least squares
-        Eigen::Vector3d solution = A.colPivHouseholderQr().solve(B);
+        int n = pts.size();
+        double sum_x = 0, sum_y = 0;
+        double sum_x2 = 0, sum_y2 = 0;
+        double sum_x3 = 0, sum_y3 = 0;
+        double sum_xy = 0, sum_x1y2 = 0, sum_x2y1 = 0;
 
-        // Step 3: Extract circle parameters
-        float centerX = solution(0) / -2.0f;
-        float centerY = solution(1) / -2.0f;
-        float radius = std::sqrt(centerX * centerX + centerY * centerY - solution(2));
+        for (const auto& p : pts) {
+            double x = p.x, y = p.y;
+            double x2 = x * x, y2 = y * y;
+            sum_x += x;
+            sum_y += y;
+            sum_x2 += x2;
+            sum_y2 += y2;
+            sum_x3 += x2 * x;
+            sum_y3 += y2 * y;
+            sum_xy += x * y;
+            sum_x1y2 += x * y2;
+            sum_x2y1 += x2 * y;
+        }
 
-        // Set the circle parameters
-        d.centerX = centerX;
-        d.centerY = centerY;
-        d.radius = radius;
+        double C = n * sum_x2 - sum_x * sum_x;
+        double D = n * sum_xy - sum_x * sum_y;
+        double E = n * sum_y2 - sum_y * sum_y;
+        double G = 0.5 * (n * sum_x3 + n * sum_x1y2 - (sum_x2 + sum_y2) * sum_x);
+        double H = 0.5 * (n * sum_y3 + n * sum_x2y1 - (sum_x2 + sum_y2) * sum_y);
+        double denom = C * E - D * D;
+
+        if (std::abs(denom) < 1e-10) return;  // avoid division by zero
+
+        double a = (G * E - D * H) / denom;
+        double b = (C * H - D * G) / denom;
+        double r = std::sqrt((sum_x2 + sum_y2 - 2 * a * sum_x - 2 * b * sum_y + n * (a * a + b * b)) / n);
+
+        d.centerX = a;
+        d.centerY = b;
+        d.radius = r;
     }
-
 
     void run() {
         while(true){
@@ -115,7 +135,7 @@ private:
             data = d;
             mutex.unlock();
 
-            printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
+            //printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
 
             // wait for next cycle
             ThisThread::sleep_for(CYCLE);

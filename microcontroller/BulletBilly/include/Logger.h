@@ -5,7 +5,9 @@
 #include <FATFileSystem.h>
 #include <array>
 #include <cstdio>
+
 #include "AnomalyDetector.h"
+#include "Localizer.h"
 
 class Logger {
 private:
@@ -15,26 +17,28 @@ private:
     FILE *logFile;
 
     AnomalyDetector &detector;
+    Localizer &localizer;
 
 public:
-    Logger(SDBlockDevice &sd, FATFileSystem &fs, AnomalyDetector &detector) : 
+    Logger(SDBlockDevice &sd, FATFileSystem &fs, AnomalyDetector &detector, Localizer &localizer) : 
         thread(osPriorityNormal, 4096*4),
         sd(sd),
         fs(fs),
-        detector(detector)
+        detector(detector),
+        localizer(localizer)
     {
-        printf("Initializing SD card \n");
+        printf("[Logger] Initializing SD card \n");
         int status = sd.init();
         if (status != 0) {
-            printf("SD card initialization failed with status %d\n", status);
+            printf("[Logger] SD card initialization failed with status %d\n", status);
             return;
         }
 
         if (sd.frequency(10000000) != 0) {
-            printf("SDWriter: set frequency failed (not fatal)\n");
+            printf("[Logger] SDWriter: set frequency failed (not fatal)\n");
         }
         if (fs.mount(&sd) != 0) {
-            printf("SDWriter: FS mount failed\n");
+            printf("[Logger] SDWriter: FS mount failed\n");
             sd.deinit();
         }
 
@@ -60,13 +64,12 @@ public:
 
         logFile = fopen(newLogFile, "a");
         if (logFile == NULL) {
-            printf("Error opening log file.\n");
+            printf("[Logger] Error opening log file.\n");
             return;
         }
-        printf("%s", newLogFile);
-        printf("\n");
+        printf("[Logger] %s \n", newLogFile);
 
-        printf("Initializing SD card done \n");
+        printf("[Logger] Initializing SD card done \n");
         thread.start(callback(this, &Logger::run));
     }
 
@@ -100,28 +103,43 @@ private:
 
     void run(){
         while(true){
+            // TODO maybe optimize this logging code
+
             // get data for log
-            AnomalyDetectorData ad_data = detector.getData();
+            AnomalyDetectorData anomalyData = detector.getData();
+            LocalizerData localizerData = localizer.getData();
 
             // START ROW
             fprintf(logFile, "{");
 
-            logArray(ad_data.scan);
+            // measurement data
+            logArray(anomalyData.scan);
             fprintf(logFile, ",");
-            logArray(ad_data.fit);
+            logArray(anomalyData.fit);
             fprintf(logFile, ",");
-            logArray(ad_data.offset);
+            logArray(anomalyData.offset);
             fprintf(logFile, ",");
-            logArray(ad_data.anomaly);
+            logArray(anomalyData.anomaly);
 
+            // detection data
             fprintf(logFile, ",");
-            fprintf(logFile, "%.3f", ad_data.centerX);
+            fprintf(logFile, "%.3f", anomalyData.centerX);
             fprintf(logFile, ",");
-            fprintf(logFile, "%.3f", ad_data.centerY);
+            fprintf(logFile, "%.3f", anomalyData.centerY);
             fprintf(logFile, ",");
-            fprintf(logFile, "%.3f", ad_data.radius);
+            fprintf(logFile, "%.3f", anomalyData.radius);
             fprintf(logFile, ",");
-            fprintf(logFile, "%.3f", ad_data.any_anomaly);
+            fprintf(logFile, "%d", anomalyData.any_anomaly);
+
+            // localization data
+            fprintf(logFile, ",");
+            fprintf(logFile, "%.3f", localizerData.entryDepth);
+            fprintf(logFile, ",");
+            fprintf(logFile, "%.3f", localizerData.tilt);
+            fprintf(logFile, ",");
+            fprintf(logFile, "%d", localizerData.isOvertilt);
+            fprintf(logFile, ",");
+            fprintf(logFile, "%d", localizerData.isSlipping);
 
             fprintf(logFile, "}\n");
             // END ROW

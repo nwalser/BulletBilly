@@ -35,14 +35,14 @@ public:
         char bytes[] = {START_FLAG, SCAN};
         serial.write(&bytes, 2);
 
-        printf("Lidar Start \n");
+        printf("[Lidar] Start \n");
     }
     
     virtual ~Lidar(){
         char bytes[] = {START_FLAG, STOP};
         serial.write(&bytes, 2);
 
-        printf("Lidar Stop \n");
+        printf("[Lidar] Stop \n");
     }
     
 

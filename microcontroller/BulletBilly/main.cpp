@@ -10,6 +10,8 @@
 #include "IMU.h"
 #include "AnomalyDetector.h"
 #include "Logger.h"
+#include "Localizer.h"
+#include "MissionController.h"
 
 int main() {
     ThisThread::sleep_for(1s);
@@ -20,7 +22,7 @@ int main() {
     const float kn = 200.0f / 12.0f;
     const float counts_per_turn = 64;
     DCMotor motor(PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, gear_ratio, kn, voltage_max, counts_per_turn);
-    DigitalOut motors_enable(PB_ENABLE_DCMOTORS);
+    DigitalOut motorsEnable(PB_ENABLE_DCMOTORS);
 
     // encoder
     EncoderCounter encoder(PB_ENC_A_M2, PB_ENC_B_M2);
@@ -40,6 +42,10 @@ int main() {
     SDBlockDevice sd(PB_SD_MOSI, PB_SD_MISO, PB_SD_SCK, PB_SD_CS);
     FATFileSystem fs("sd");
     Logger logger(sd, fs, detector);
+
+    Localizer localizer(motor, encoder, imu);
+    MissionController controller(motor, localizer, button, motorsEnable);
+
 
     // while(button){}
 
