@@ -58,7 +58,7 @@ private:
 
         printf("[MissionController] Drive \n");
 
-        float velocity = 0.005; // [m/s]
+        float velocity = 0.02; // [m/s]
         float circumference = TIRE_RADIUS * 2 * PI;
         float rps = velocity / circumference;
 

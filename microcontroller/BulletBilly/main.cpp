@@ -22,6 +22,13 @@ int main() {
     const float kn = 200.0f / 12.0f;
     const float counts_per_turn = 64;
     DCMotor motor(PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, gear_ratio, kn, voltage_max, counts_per_turn);
+
+    // KP = 4.2 * 50 / 78.125
+    // KI = 140 * 50 / 78.125
+    // KD = 0.0192 * 50 / 78.125
+    //motor.setVelocityCntrl(4.2 * 50 / 78.125 * 0, 140 * 50 / 78.125 * 0.1, 0);
+    //motor.disableMotionPlanner();
+
     DigitalOut motorsEnable(PB_ENABLE_DCMOTORS);
 
     // encoder
