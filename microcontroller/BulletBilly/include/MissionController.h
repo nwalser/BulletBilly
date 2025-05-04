@@ -4,8 +4,16 @@
 #include "DCMotor.h"
 #include "Localizer.h"
 
-struct MissionControllerData {
+enum MissionControllerState {
+    Idle = 0,
+    NoScan = 1,
+    CoarseScan = 2,
+    FineScan = 3,
+    Return = 10,
+};
 
+struct MissionControllerData {
+    MissionControllerState state;
 };
 
 class MissionController {
@@ -18,6 +26,8 @@ private:
     Localizer &localizer;
     DigitalIn &start;
     DigitalOut &motorsEnable;
+
+    MissionControllerState state;
 
     constexpr static const float PI = 3.1415926535897932f;
     constexpr static const float TIRE_RADIUS = 0.030; // tire radius [m]
@@ -45,46 +55,61 @@ public:
     };
 
 private:
-    void run(){
-        motorsEnable = true;
-
-        while(start){
-            ThisThread::sleep_for(100ms);
-        }
-
-        while(!start){
-            ThisThread::sleep_for(100ms);
-        }
-
-        printf("[MissionController] Drive \n");
-
-        float velocity = 0.02; // [m/s]
+    void setVelocity(float velocity){
         float circumference = TIRE_RADIUS * 2 * PI;
         float rps = velocity / circumference;
 
         motor.setVelocity(rps);
+    }
 
-        while(start){
-            ThisThread::sleep_for(100ms);
-        }
+    void toState(MissionControllerState nextState){
+        state = nextState;
+    }
 
-        motor.setVelocity(0);
-
-        printf("[MissionController] Stop \n");
-
-        return;
-
+    void run(){
+        motorsEnable = true;
+        state = MissionControllerState::Idle;
 
         while(true){
             MissionControllerData d;
+            LocalizerData localizerData = localizer.getData();
 
+            switch(state){
+                case Idle: {
+                    setVelocity(0.0);
 
+                    // transition
+                    if(!start) toState(FineScan);
+                    break;
+                };
+                case CoarseScan: {
+                    // not implemented
+                    break;
+                };
+                case FineScan: {
+                    setVelocity(0.02);
+
+                    // transition
+                    if(localizerData.entryDepth > 0.3) toState(Return);
+                    break;
+                };
+                case NoScan: {
+
+                    break;
+                };
+                case Return: {
+                    setVelocity(-0.02);
+
+                    // transition
+                    if(localizerData.entryDepth <= 0.0) toState(Idle);
+                    break;
+                }
+            };
 
             // update data
             mutex.lock();
             data = d;
             mutex.unlock();
-
 
             ThisThread::sleep_for(100ms);
         }

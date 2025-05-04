@@ -1,97 +1,71 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import gridspec
 
-# extract all data
 def parse_data(text):
     text = text.replace('{', '[').replace('}', ']')
-    return eval(text)
+    return eval(text, {"__builtins__": None, "inf": float('inf'), "-inf": float('-inf')})
 
-buffer = ''
-parsed = []
-
-with open('data6.txt', 'r') as f:
-    for line in f:
-        buffer += line.strip()
-        if buffer.count('{') == buffer.count('}'):
-            parsed.append(parse_data(buffer))
-            buffer = ''
+def read_data(path):
+    buffer = ''
+    parsed = []
+    with open(path, 'r') as f:
+        for line in f:
+            buffer += line.strip()
+            if buffer.count('{') == buffer.count('}'):
+                parsed.append(parse_data(buffer))
+                buffer = ''
+    return parsed
 
 # get scan data
-def extract_array(parsed, num):
+def extract_array(p, num):
     arr = []
-    for item in parsed:
+    for item in p:
         if isinstance(item, list) and item and isinstance(item[num], list):
             arr.append(item[num])
     return np.array(arr)
 
-def extract_value(parsed, num):
+def extract_value(p, num):
     arr = []
-    for item in parsed:
+    for item in p:
         arr.append(item[num])
     return np.array(arr)
 
-fig, axes = plt.subplots(7, 1, figsize=(12, 12))
+def plot_heatmap(a, x, data, vmax = 2.0):
+    edges = np.zeros(len(x) + 1)
+    edges[1:-1] = (x[:-1] + x[1:]) / 2
+    edges[0] = x[0] - (x[1] - x[0]) / 2
+    edges[-1] = x[-1] + (x[-1] - x[-2]) / 2
+
+    X, Y = np.meshgrid(edges, np.arange(data.shape[1] + 1))
+    hm = a.pcolormesh(X, Y, data.T, cmap='viridis', vmin=0, vmax=vmax, shading='flat')
+
+def plot_series(a, x, data, title, ylim):
+    a.plot(x, data)
+    a.set_title(title)
+    a.set_ylim(ylim)
+    a.set_xlim([np.min(entry_depth), np.max(entry_depth)])
 
 
-# plot scan
-data = extract_array(parsed, 0)
-a = axes[0]
-hm = a.imshow(data.transpose(), cmap='viridis', interpolation='nearest', aspect='auto', vmin=0, vmax=0.2)
-a.set_title("Lidar Raw")
-a.tick_params(labelbottom=False)
+# LOAD DATA
+parsed = read_data("data7.txt")
 
-#fig.colorbar(hm, ax=a)
+entry_depth = extract_value(parsed, 8)
+wallOffset = extract_array(parsed, 2)
+radius = extract_value(parsed, 6)
+offsetX = extract_value(parsed, 4)
+offsetY = extract_value(parsed, 5)
+offset = np.sqrt(np.pow(offsetX, 2) + np.pow(offsetY, 2))
 
-# plot fit
-data = extract_array(parsed, 1)
-a = axes[1]
-hm = a.imshow(data.transpose(), cmap='viridis', interpolation='nearest', aspect='auto', vmin=0, vmax=0.2)
-a.set_title("Circle Fit")
-a.tick_params(labelbottom=False)
-#fig.colorbar(hm, ax=a)
-
-# plot offset
-data = extract_array(parsed, 2)
-a = axes[2]
-hm = a.imshow(data.transpose(), cmap='viridis', interpolation='nearest', aspect='auto', vmin=0, vmax=2)
-a.set_title("Lidar Raw - Circle Fit")
-a.tick_params(labelbottom=False)
-#fig.colorbar(hm, ax=a)
-
-# plot anomaly
-data = extract_array(parsed, 3)
-a = axes[3]
-hm = a.imshow(data.transpose(), cmap='viridis', interpolation='nearest', aspect='auto', vmin=0, vmax=1)
-a.set_title("Anomaly Map")
-a.tick_params(labelbottom=False)
-#fig.colorbar(hm, ax=a)
+# PLOT
+fig = plt.figure(figsize=(12, 12))
+gs = gridspec.GridSpec(3, 1, height_ratios=[8, 1, 1])
+axes = [fig.add_subplot(gs[i]) for i in range(3)]
 
 
-# plot circle parameters
-data = extract_value(parsed, 4)
-a = axes[4]
-a.plot(data)
-a.set_title("Offset X")
-a.set_ylim([-0.1, 0.1])
-a.tick_params(labelbottom=False)
-
-data = extract_value(parsed, 5)
-a = axes[5]
-a.plot(data)
-a.set_title("Offset Y")
-a.set_ylim([-0.1, 0.1])
-a.tick_params(labelbottom=False)
-
-data = extract_value(parsed, 6)
-a = axes[6]
-a.plot(data)
-a.set_title("Radius")
-a.set_ylim([0, 0.5])
-
+plot_heatmap(axes[0], entry_depth, wallOffset, vmax = 0.05)
+plot_series(axes[1], entry_depth, radius, "Pipe Radius", ylim=[0.15, 0.20])
+plot_series(axes[2], entry_depth, offset, "Lidar Center Offset", ylim=[0, 0.05])
 
 plt.tight_layout()
 plt.show()
-
-
-data = extract_array(parsed, 0)[14]
-print(data)

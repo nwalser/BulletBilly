@@ -144,6 +144,7 @@ private:
             fprintf(logFile, "}\n");
             // END ROW
 
+
             ThisThread::sleep_for(200ms);
         }
     }

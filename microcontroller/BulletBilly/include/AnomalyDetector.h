@@ -59,7 +59,7 @@ private:
             float r = d.scan[i];
             
             // skip measurements outside of range
-            if (r <= 0 || r > 1) continue;
+            if (r <= 0 || r > 0.25) continue;
 
             float x = r * cos(angle);
             float y = r * sin(angle);
@@ -135,7 +135,7 @@ private:
             data = d;
             mutex.unlock();
 
-            //printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
+            printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
 
             // wait for next cycle
             ThisThread::sleep_for(CYCLE);

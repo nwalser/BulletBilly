@@ -55,24 +55,8 @@ int main() {
 
     Logger logger(sd, fs, detector, localizer);
 
-    // while(button){}
-
-    // motors_enable.write(true);
-
-    // motor.setVelocity(motor.getMaxVelocity() * 0.03f);
-    // motor.enableMotionPlanner();
 
     while(true){
-        ImuData imu_data = imu.getImuData();
-        float rotation = motor.getRotation();
-        std::array<float, 360> single = lidar.getScan();
-
-        //float aver = average(single);
-
-        //AnomalyDetectorData ad_data = anomalyDetector.getData();
-        AnomalyDetectorData test = detector.getData();
-
-
-        //printf("%.2f %.2d %.2f %.2f %d \n", rotation, encoder.read(), imu_data.tilt, aver, test.any_anomaly);
+        ThisThread::sleep_for(100ms);
     }
 }
