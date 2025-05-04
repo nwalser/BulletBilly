@@ -25,7 +25,7 @@ struct Point {
 
 class AnomalyDetector {
 private:
-    constexpr static const Kernel::Clock::duration_u32 CYCLE = 200ms;
+    constexpr static const Kernel::Clock::duration_u32 CYCLE = 50ms;
     constexpr static const float PI = 3.1415926535897932f;
     constexpr static const float ANOMALY_THRESHOLD = 0.005f;
 
@@ -54,7 +54,7 @@ public:
 private:
     void fitCircleLeastSquares(AnomalyDetectorData &d) {
         std::vector<Point> pts;
-        for (int i = 0; i < d.scan.size(); i+=4) {
+        for (int i = 0; i < d.scan.size(); i+=6) {
             float angle = i * PI / 180.0;
             float r = d.scan[i];
             
@@ -135,7 +135,7 @@ private:
             data = d;
             mutex.unlock();
 
-            printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
+            //printf("%.3f %.3f %.3f \n", data.centerX, data.centerY, data.radius);
 
             // wait for next cycle
             ThisThread::sleep_for(CYCLE);

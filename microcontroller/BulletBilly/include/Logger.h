@@ -78,7 +78,7 @@ public:
     }
 
 private:
-    void logArray(array<float, 360> arr){
+    void logArray(array<float, 360> &arr){
         fprintf(logFile, "{");
         for(int i = 0; i < arr.size(); i++){
             fprintf(logFile, "%.3f", arr[i]);
@@ -105,6 +105,8 @@ private:
         while(true){
             // TODO maybe optimize this logging code
 
+            //continue;
+
             // get data for log
             AnomalyDetectorData anomalyData = detector.getData();
             LocalizerData localizerData = localizer.getData();
@@ -113,13 +115,17 @@ private:
             fprintf(logFile, "{");
 
             // measurement data
-            logArray(anomalyData.scan);
+            //logArray(anomalyData.scan);
+            fprintf(logFile, "0");
             fprintf(logFile, ",");
-            logArray(anomalyData.fit);
+            //logArray(anomalyData.fit);
+            fprintf(logFile, "0");
             fprintf(logFile, ",");
             logArray(anomalyData.offset);
+            //fprintf(logFile, "0");
             fprintf(logFile, ",");
-            logArray(anomalyData.anomaly);
+            //logArray(anomalyData.anomaly);
+            fprintf(logFile, "0");
 
             // detection data
             fprintf(logFile, ",");
@@ -129,7 +135,7 @@ private:
             fprintf(logFile, ",");
             fprintf(logFile, "%.3f", anomalyData.radius);
             fprintf(logFile, ",");
-            fprintf(logFile, "%d", anomalyData.any_anomaly);
+            fprintf(logFile, "%d", anomalyData.any_anomaly != 0);
 
             // localization data
             fprintf(logFile, ",");
@@ -144,8 +150,9 @@ private:
             fprintf(logFile, "}\n");
             // END ROW
 
+            // printf("%.3f \n", anomalyData.centerX);
 
-            ThisThread::sleep_for(200ms);
+            ThisThread::sleep_for(50ms);
         }
     }
 

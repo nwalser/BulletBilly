@@ -87,7 +87,7 @@ private:
                     break;
                 };
                 case FineScan: {
-                    setVelocity(0.02);
+                    setVelocity(0.015);
 
                     // transition
                     if(localizerData.entryDepth > 0.3) toState(Return);
@@ -98,7 +98,7 @@ private:
                     break;
                 };
                 case Return: {
-                    setVelocity(-0.02);
+                    setVelocity(-0.1);
 
                     // transition
                     if(localizerData.entryDepth <= 0.0) toState(Idle);
@@ -111,7 +111,7 @@ private:
             data = d;
             mutex.unlock();
 
-            ThisThread::sleep_for(100ms);
+            ThisThread::sleep_for(50ms);
         }
     }
 };
