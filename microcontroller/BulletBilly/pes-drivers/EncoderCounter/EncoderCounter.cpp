@@ -156,7 +156,7 @@ void EncoderCounter::reset(int16_t offset)
  */
 int16_t EncoderCounter::read()
 {
-    return static_cast<int16_t>(-TIM->CNT);
+    return static_cast<int16_t>(TIM->CNT);
 }
 
 /**

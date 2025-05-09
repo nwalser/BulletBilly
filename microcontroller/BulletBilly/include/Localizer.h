@@ -25,6 +25,8 @@ private:
     DCMotor &motor;
     IMU &imu;
 
+    bool resetFlag = false;
+
     constexpr static const float PI = 3.1415926535897932f;
     constexpr static const float COUNTS_PER_TURN = 2000; // [1]
     constexpr static const float TIRE_RADIUS = 0.030; // tire radius [m]
@@ -52,17 +54,25 @@ public:
         return d;
     };
 
+    void reset(){
+        resetFlag = true;
+    }
+
 private:
     void run(){
-        long count = encoder.read();
+        long count = -encoder.read();
         short previousCount = count;     
 
         while(true){
             LocalizerData d;
 
+            if(resetFlag){
+                resetFlag = false;
+                count = 0;
+            }
 
             // update encoder
-            const short actualCount = encoder.read();
+            const short actualCount = -encoder.read();
             const short countDelta = actualCount - previousCount; // avoid overflow
             previousCount = actualCount;
             count -= countDelta;

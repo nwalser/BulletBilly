@@ -74,12 +74,19 @@ private:
             MissionControllerData d;
             LocalizerData localizerData = localizer.getData();
 
+
+            printf("%.3f %.3f \n", motor.getRotation(), localizerData.entryDepth);
+            
+
             switch(state){
                 case Idle: {
                     setVelocity(0.0);
 
                     // transition
-                    if(!start) toState(FineScan);
+                    if(!start) {
+                        toState(FineScan);
+                        localizer.reset();
+                    };
                     break;
                 };
                 case CoarseScan: {
@@ -87,10 +94,10 @@ private:
                     break;
                 };
                 case FineScan: {
-                    setVelocity(0.015);
+                    setVelocity(-0.010);
 
                     // transition
-                    if(localizerData.entryDepth > 0.3) toState(Return);
+                    if(localizerData.entryDepth > 0.5) toState(Return);
                     break;
                 };
                 case NoScan: {
@@ -98,7 +105,7 @@ private:
                     break;
                 };
                 case Return: {
-                    setVelocity(-0.1);
+                    setVelocity(+0.200);
 
                     // transition
                     if(localizerData.entryDepth <= 0.0) toState(Idle);

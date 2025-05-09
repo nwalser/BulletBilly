@@ -18,7 +18,7 @@ int main() {
 
     // motor
     const float voltage_max = 12.0f;
-    const float gear_ratio = 50.0f;
+    const float gear_ratio = 150.0f;
     const float kn = 200.0f / 12.0f;
     const float counts_per_turn = 64;
     DCMotor motor(PB_PWM_M1, PB_ENC_A_M1, PB_ENC_B_M1, gear_ratio, kn, voltage_max, counts_per_turn);

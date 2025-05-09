@@ -53,7 +53,7 @@ def plot_series(a, x, data, title, ylim, ylabel=""):
 
 
 # LOAD DATA
-parsed = read_data("data10.txt")[::-1]
+parsed = read_data("data12.txt")[::-1]
 
 entry_depth = extract_value(parsed, 8)
 any_anomaly = extract_value(parsed, 7)
