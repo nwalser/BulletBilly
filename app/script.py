@@ -123,6 +123,8 @@ ax6.yaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val:.0f} °"))
 ax6.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val*1000:.0f} mm"))
 ax6.legend([Line2D([0], [0])], ['Error Map'], loc='upper right')
 ax6.grid(True)
+ax6.sharex(ax3)
+ax6.sharey(ax3)
 
 ## TILT
 ax4 = fig.add_subplot(gs[9:10, 3:])
@@ -131,6 +133,7 @@ ax4.yaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val:.1f} °"))
 ax4.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val*1000:.0f} mm"))
 ax4.legend(loc='upper right')
 ax4.grid(True)
+ax4.sharex(ax3)
 
 ## RADIUS
 ax5 = fig.add_subplot(gs[8:9, 3:])
@@ -140,6 +143,7 @@ ax5.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val*1000:.0f} mm")
 ax5.set_ylim(ymin=0)
 ax5.legend(loc='upper right')
 ax5.grid(True)
+ax5.sharex(ax3)
 
 ## DEFECT CIRCUMFERENCE
 ax7 = fig.add_subplot(gs[7:8, 3:])
@@ -149,6 +153,7 @@ ax7.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val*1000:.0f} mm")
 ax7.legend(loc='upper right')
 ax7.set_ylim(ymin=0, ymax=100)
 ax7.grid(True)
+ax7.sharex(ax3)
 
 ## CENTER OFFSET
 ax9 = fig.add_subplot(gs[10:11, 3:])
@@ -158,6 +163,7 @@ ax9.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val*1000:.0f} mm")
 ax9.set_ylim(ymin=0)
 ax9.legend(loc='upper right')
 ax9.grid(True)
+ax9.sharex(ax3)
 
 ## GENERAL INFORMATION
 ax8 = fig.add_subplot(gs[1, :3])
