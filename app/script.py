@@ -54,7 +54,7 @@ def plot_series(a, x, data, title, ylim, ylabel=""):
 
 
 # LOAD DATA
-parsed = read_data("data10.txt")[::-1][220:-120]
+parsed = read_data("data10.txt")[::-1][100:-100]
 
 entry_depth = extract_value(parsed, 8)
 any_anomaly = extract_value(parsed, 7)
@@ -83,25 +83,31 @@ plt.show()
 
 # create 3d plot
 # angles and depth
-wallOffset += 0.2
-angles = np.deg2rad(np.linspace(0, 360, wallOffset.shape[1], endpoint=True))  # (360,)
-depths = entry_depth  # (396,)
+from matplotlib import cm
+wallOffset = np.clip(wallOffset, -0.02, 0.02)
+wallOffset = wallOffset + 0.2
 
-# Create angle and depth grids
-angles_grid = np.tile(angles, (wallOffset.shape[0], 1))       # (396, 360)
-depth_grid = np.tile(depths[:, None], (1, wallOffset.shape[1]))  # (396, 360)
+angles = np.deg2rad(np.linspace(0, 360, wallOffset.shape[1], endpoint=False))
+depths = entry_depth
 
-# Convert to Cartesian
+# grids
+angles_grid = np.tile(angles, (wallOffset.shape[0], 1))
+depth_grid = np.tile(depths[:, None], (1, wallOffset.shape[1]))
+
+# Cartesian coordinates
 X = wallOffset * np.cos(angles_grid)
 Y = wallOffset * np.sin(angles_grid)
 Z = depth_grid
 
+# Normalize wallOffset for colormap
+norm = plt.Normalize(vmin=np.min(wallOffset), vmax=np.max(wallOffset))
+colors = cm.inferno_r(norm(wallOffset))
+
 # Plot
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(X, Y, Z)
+ax.plot_surface(Y, Z, X, facecolors=colors, rstride=1, cstride=1, shade=False)
 plt.show()
-
 
 
 
