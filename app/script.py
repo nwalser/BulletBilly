@@ -8,7 +8,8 @@ from matplotlib.colors import Normalize
 from matplotlib.ticker import FuncFormatter
 from matplotlib.lines import Line2D
 from tkinter import Tk, filedialog
-
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 matplotlib.use('qtagg')
 
 def parse_data(text):
@@ -79,6 +80,7 @@ gs = gridspec.GridSpec(11, 6)
 
 ## PLOT 1: 1D ERROR PLOT
 ax1 = fig.add_subplot(gs[0, :])
+ax1.set_title("Full Pipeline Error Map")
 ax1.fill_between(entry_depth, any_defect, step='mid', alpha=1, color='#FF746C')
 ax1.set_ylim(0.1, 0.9)
 ax1.set_ylabel("Defect")
@@ -89,7 +91,6 @@ pos = ax1.get_position()
 
 ## 3D PREVIEW PLOT
 ax2 = fig.add_subplot(gs[2:, 0:3], projection='3d')
-
 angles = np.deg2rad(np.linspace(0, 360, wall_distance.shape[1], endpoint=False))
 angles_grid = np.tile(angles, (wall_distance.shape[0], 1))
 depth_grid = np.tile(entry_depth[:, None], (1, wall_distance.shape[1]))
@@ -108,6 +109,7 @@ ax2.xaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val*1000:.0f} mm")
 
 ## OFFSET MAP
 ax3 = fig.add_subplot(gs[1:4, 3:])
+ax3.set_title("Section Data")
 X, Y = np.meshgrid(edges, np.arange(wall_offset.shape[1] + 1))
 hm = ax3.pcolormesh(X, Y, wall_offset.T, cmap="viridis", vmin=0, vmax=0.02, shading='flat', label="Hello")
 ax3.yaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val:.0f} °"))
@@ -167,6 +169,7 @@ ax9.sharex(ax3)
 
 ## GENERAL INFORMATION
 ax8 = fig.add_subplot(gs[1, :3])
+ax8.set_title("Inspection Metrics")
 ax8.axis('off')
 table = ax8.table(loc='center', bbox=[0, 0, 1, 1], cellText=[
     ['Entry Depth', f"{np.max(entry_depth)*1000:.0f}mm"],
