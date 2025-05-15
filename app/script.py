@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from fontTools.misc.cython import returns
 from matplotlib import gridspec
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -53,7 +54,7 @@ def plot_series(a, x, data, title, ylim, ylabel=""):
 
 
 # LOAD DATA
-parsed = read_data("data12.txt")[::-1]
+parsed = read_data("data10.txt")[::-1]
 
 entry_depth = extract_value(parsed, 8)
 any_anomaly = extract_value(parsed, 7)
@@ -78,3 +79,52 @@ plot_series(axes[4], entry_depth, tilt, "Tilt", ylim=[-10, 10], ylabel="Tilt [de
 
 plt.tight_layout()
 plt.show()
+
+
+# create 3d plot
+from matplotlib.figure import Figure
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
+# Create the mesh in polar coordinates and compute corresponding Z.
+r = np.linspace(0, 1.25, 50)
+p = np.linspace(0, 2*np.pi, 50)
+R, P = np.meshgrid(r, p)
+Z = ((R**2 - 1)**2)
+
+# Express the mesh in the cartesian system.
+X, Y = R*np.cos(P), R*np.sin(P)
+
+# Plot the surface.
+ax.plot_surface(X, Y, Z, cmap=plt.cm.YlGnBu_r)
+
+# Tweak the limits and add latex math labels.
+ax.set_zlim(0, 1)
+ax.set_xlabel(r'$\phi_\mathrm{real}$')
+ax.set_ylabel(r'$\phi_\mathrm{im}$')
+ax.set_zlabel(r'$V(\phi)$')
+
+
+# CREATE TEST UI
+import tkinter as tk
+from tkinter import ttk
+from ttkthemes import ThemedTk
+
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
+
+root = ThemedTk()
+
+canvas = FigureCanvasTkAgg(fig, master=root)
+canvas.draw()
+
+toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
+toolbar.update()
+
+# display
+toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+tk.mainloop()
