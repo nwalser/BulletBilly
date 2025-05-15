@@ -54,7 +54,7 @@ def plot_series(a, x, data, title, ylim, ylabel=""):
 
 
 # LOAD DATA
-parsed = read_data("data10.txt")[::-1][100:-100]
+parsed = read_data("data10.txt")[::-1][0:-1]
 
 entry_depth = extract_value(parsed, 8)
 any_anomaly = extract_value(parsed, 7)
@@ -85,7 +85,7 @@ plt.show()
 # angles and depth
 from matplotlib import cm
 wallOffset = np.clip(wallOffset, -0.02, 0.02)
-wallOffset = wallOffset + 0.2
+wallOffset = wallOffset + 0.05
 
 angles = np.deg2rad(np.linspace(0, 360, wallOffset.shape[1], endpoint=False))
 depths = entry_depth
