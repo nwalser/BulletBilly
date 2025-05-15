@@ -3,6 +3,10 @@ import numpy as np
 from fontTools.misc.cython import returns
 from matplotlib import gridspec
 from matplotlib.colors import LinearSegmentedColormap
+import matplotlib
+from matplotlib import cm
+from matplotlib.widgets import SpanSelector
+matplotlib.use('qtagg')
 
 def parse_data(text):
     text = text.replace('{', '[').replace('}', ']')
@@ -59,77 +63,74 @@ parsed = read_data("data10.txt")[::-1][0:-1]
 entry_depth = extract_value(parsed, 8)
 any_anomaly = extract_value(parsed, 7)
 tilt = extract_value(parsed, 9)
-wallOffset = extract_array(parsed, 2)
+wall_offset = extract_array(parsed, 2)
 radius = extract_value(parsed, 6)
 offsetX = extract_value(parsed, 4)
 offsetY = extract_value(parsed, 5)
 offset = np.sqrt(np.pow(offsetX, 2) + np.pow(offsetY, 2))
 
 # PLOT
+#fig = plt.figure(figsize=(12, 24))
+#gs = gridspec.GridSpec(5, 1, height_ratios=[5, 1, 1, 1, 1])
+#axes = [fig.add_subplot(gs[i]) for i in range(5)]
+#
+#
+#plot_heatmap(axes[0], entry_depth, wall_offset, vmax = 0.04)
+#plot_series(axes[1], entry_depth, any_anomaly, "Any Anomaly", ylim=[0, 200], ylabel="[yes/no]")
+#plot_series(axes[2], entry_depth, radius*1000, "Pipe Radius", ylim=[150, 200], ylabel="[mm]")
+#plot_series(axes[3], entry_depth, offset*1000, "Lidar Center Offset", ylim=[0, 50], ylabel="Offset [mm]")
+#plot_series(axes[4], entry_depth, tilt, "Tilt", ylim=[-10, 10], ylabel="Tilt [deg]")
+
+#plt.tight_layout()
+# plt.show()
+
+
+#### PLOTTING -----
 fig = plt.figure(figsize=(12, 24))
-gs = gridspec.GridSpec(5, 1, height_ratios=[20, 1, 1, 1, 1])
-axes = [fig.add_subplot(gs[i]) for i in range(5)]
+gs = gridspec.GridSpec(10, 5)
+
+## AX 1
+anomalies = np.clip(np.sum(np.abs(wall_offset), axis=1), 0, 1)
+ax1 = fig.add_subplot(gs[0, :])
+ax1.plot(entry_depth, anomalies)
+
+## 3D Plot
+ax2 = fig.add_subplot(gs[1:7, 0:2])
+
+ax3 = fig.add_subplot(gs[1:3, 2:])
+ax3.plot(entry_depth, tilt)
+plot_heatmap(ax3, entry_depth, wall_offset, vmax = 0.04)
+
+ax4 = fig.add_subplot(gs[3:5, 2:])
+ax4.plot(entry_depth, tilt)
+ax4.set_ylabel("Tilt [°]")
+
+ax5 = fig.add_subplot(gs[5:7, 2:])
+ax5.plot(entry_depth, radius * 1000)
+ax5.set_ylabel("Radius [mm]")
 
 
-plot_heatmap(axes[0], entry_depth, wallOffset, vmax = 0.04)
-plot_series(axes[1], entry_depth, any_anomaly, "Any Anomaly", ylim=[0, 200], ylabel="[yes/no]")
-plot_series(axes[2], entry_depth, radius*1000, "Pipe Radius", ylim=[150, 200], ylabel="[mm]")
-plot_series(axes[3], entry_depth, offset*1000, "Lidar Center Offset", ylim=[0, 50], ylabel="Offset [mm]")
-plot_series(axes[4], entry_depth, tilt, "Tilt", ylim=[-10, 10], ylabel="Tilt [deg]")
+
+
+## INTERACTIVITY
+def onselect(xmin, xmax):
+    ax2.set_xlim(xmin=xmin, xmax=xmax)
+    ax3.set_xlim(xmin=xmin, xmax=xmax)
+    ax4.set_xlim(xmin=xmin, xmax=xmax)
+    ax5.set_xlim(xmin=xmin, xmax=xmax)
+    fig.canvas.draw_idle()
+
+span = SpanSelector(
+    ax1,
+    onselect,
+    "horizontal",
+    onmove_callback=onselect,
+    useblit=True,
+    props=dict(alpha=0.5),
+    interactive=True,
+    drag_from_anywhere=True
+)
+
 
 plt.tight_layout()
 plt.show()
-
-
-# create 3d plot
-# angles and depth
-from matplotlib import cm
-wallOffset = np.clip(wallOffset, -0.02, 0.02)
-wallOffset = wallOffset + 0.05
-
-angles = np.deg2rad(np.linspace(0, 360, wallOffset.shape[1], endpoint=False))
-depths = entry_depth
-
-# grids
-angles_grid = np.tile(angles, (wallOffset.shape[0], 1))
-depth_grid = np.tile(depths[:, None], (1, wallOffset.shape[1]))
-
-# Cartesian coordinates
-X = wallOffset * np.cos(angles_grid)
-Y = wallOffset * np.sin(angles_grid)
-Z = depth_grid
-
-# Normalize wallOffset for colormap
-norm = plt.Normalize(vmin=np.min(wallOffset), vmax=np.max(wallOffset))
-colors = cm.inferno_r(norm(wallOffset))
-
-# Plot
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(Y, Z, X, facecolors=colors, rstride=1, cstride=1, shade=False)
-plt.show()
-
-
-
-# CREATE TEST UI
-import tkinter as tk
-from tkinter import ttk
-from ttkthemes import ThemedTk
-
-from matplotlib.backend_bases import key_press_handler
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-
-
-root = ThemedTk()
-
-canvas = FigureCanvasTkAgg(fig, master=root)
-canvas.draw()
-
-toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
-toolbar.update()
-
-# display
-toolbar.pack(side=tk.BOTTOM, fill=tk.X)
-canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-tk.mainloop()
