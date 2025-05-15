@@ -54,7 +54,7 @@ def plot_series(a, x, data, title, ylim, ylabel=""):
 
 
 # LOAD DATA
-parsed = read_data("data10.txt")[::-1]
+parsed = read_data("data10.txt")[::-1][220:-120]
 
 entry_depth = extract_value(parsed, 8)
 any_anomaly = extract_value(parsed, 7)
@@ -82,28 +82,27 @@ plt.show()
 
 
 # create 3d plot
-from matplotlib.figure import Figure
+# angles and depth
+wallOffset += 0.2
+angles = np.deg2rad(np.linspace(0, 360, wallOffset.shape[1], endpoint=True))  # (360,)
+depths = entry_depth  # (396,)
 
+# Create angle and depth grids
+angles_grid = np.tile(angles, (wallOffset.shape[0], 1))       # (396, 360)
+depth_grid = np.tile(depths[:, None], (1, wallOffset.shape[1]))  # (396, 360)
+
+# Convert to Cartesian
+X = wallOffset * np.cos(angles_grid)
+Y = wallOffset * np.sin(angles_grid)
+Z = depth_grid
+
+# Plot
 fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(X, Y, Z)
+plt.show()
 
-# Create the mesh in polar coordinates and compute corresponding Z.
-r = np.linspace(0, 1.25, 50)
-p = np.linspace(0, 2*np.pi, 50)
-R, P = np.meshgrid(r, p)
-Z = ((R**2 - 1)**2)
 
-# Express the mesh in the cartesian system.
-X, Y = R*np.cos(P), R*np.sin(P)
-
-# Plot the surface.
-ax.plot_surface(X, Y, Z, cmap=plt.cm.YlGnBu_r)
-
-# Tweak the limits and add latex math labels.
-ax.set_zlim(0, 1)
-ax.set_xlabel(r'$\phi_\mathrm{real}$')
-ax.set_ylabel(r'$\phi_\mathrm{im}$')
-ax.set_zlabel(r'$V(\phi)$')
 
 
 # CREATE TEST UI
