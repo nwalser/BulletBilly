@@ -1,12 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from fontTools.misc.cython import returns
 from matplotlib import gridspec
-from matplotlib.colors import LinearSegmentedColormap
 import matplotlib
-from matplotlib import cm
 from matplotlib.widgets import SpanSelector
 matplotlib.use('qtagg')
+plt.style.use('dark_background')
 
 def parse_data(text):
     text = text.replace('{', '[').replace('}', ']')
@@ -49,16 +47,9 @@ def plot_heatmap(a, x, data, vmax = 2.0):
     X, Y = np.meshgrid(edges, np.arange(data.shape[1] + 1))
     hm = a.pcolormesh(X, Y, data.T, cmap="inferno_r", vmin=0, vmax=vmax, shading='flat')
 
-def plot_series(a, x, data, title, ylim, ylabel=""):
-    a.plot(x, data)
-    #a.set_title(title)
-    a.set_ylabel(ylabel)
-    a.set_ylim(ylim)
-    a.set_xlim([np.min(entry_depth), np.max(entry_depth)])
 
-
-# LOAD DATA
-parsed = read_data("data10.txt")[::-1][0:-1]
+# LOAD RAW DATA
+parsed = read_data("data10.txt")[70:280]
 
 entry_depth = extract_value(parsed, 8)
 any_anomaly = extract_value(parsed, 7)
@@ -69,20 +60,11 @@ offsetX = extract_value(parsed, 4)
 offsetY = extract_value(parsed, 5)
 offset = np.sqrt(np.pow(offsetX, 2) + np.pow(offsetY, 2))
 
-# PLOT
-#fig = plt.figure(figsize=(12, 24))
-#gs = gridspec.GridSpec(5, 1, height_ratios=[5, 1, 1, 1, 1])
-#axes = [fig.add_subplot(gs[i]) for i in range(5)]
-#
-#
-#plot_heatmap(axes[0], entry_depth, wall_offset, vmax = 0.04)
-#plot_series(axes[1], entry_depth, any_anomaly, "Any Anomaly", ylim=[0, 200], ylabel="[yes/no]")
-#plot_series(axes[2], entry_depth, radius*1000, "Pipe Radius", ylim=[150, 200], ylabel="[mm]")
-#plot_series(axes[3], entry_depth, offset*1000, "Lidar Center Offset", ylim=[0, 50], ylabel="Offset [mm]")
-#plot_series(axes[4], entry_depth, tilt, "Tilt", ylim=[-10, 10], ylabel="Tilt [deg]")
-
-#plt.tight_layout()
-# plt.show()
+# PROCESS SOME DATA
+wall_offset = wall_offset.clip(-0.1, 0.1)
+is_defect = np.where(wall_offset > 0.01, 1, 0)
+any_defect = np.any(is_defect, axis=1)
+radius = radius.clip(-1, 1)
 
 
 #### PLOTTING -----
@@ -90,15 +72,17 @@ fig = plt.figure(figsize=(12, 24))
 gs = gridspec.GridSpec(10, 5)
 
 ## AX 1
-anomalies = np.clip(np.sum(np.abs(wall_offset), axis=1), 0, 1)
 ax1 = fig.add_subplot(gs[0, :])
-ax1.plot(entry_depth, anomalies)
+ax1.fill_between(entry_depth, any_defect, step='mid', alpha=1, color='#FF746C')  # fill under the step plot
+ax1.set_ylim(0.1, 0.9)
+ax1.set_ylabel("Defect")
+ax1.set_xlabel("Entry Depth [m]")
 
 ## 3D Plot
 ax2 = fig.add_subplot(gs[1:7, 0:2])
+plot_heatmap(ax2, entry_depth, is_defect, vmax = 0.04)
 
 ax3 = fig.add_subplot(gs[1:3, 2:])
-ax3.plot(entry_depth, tilt)
 plot_heatmap(ax3, entry_depth, wall_offset, vmax = 0.04)
 
 ax4 = fig.add_subplot(gs[3:5, 2:])
@@ -120,6 +104,12 @@ def onselect(xmin, xmax):
     ax5.set_xlim(xmin=xmin, xmax=xmax)
     fig.canvas.draw_idle()
 
+ax2.set_xlim(xmin=-1, xmax=0)
+ax3.set_xlim(xmin=-1, xmax=0)
+ax4.set_xlim(xmin=-1, xmax=0)
+ax5.set_xlim(xmin=-1, xmax=0)
+
+
 span = SpanSelector(
     ax1,
     onselect,
@@ -130,7 +120,6 @@ span = SpanSelector(
     interactive=True,
     drag_from_anywhere=True
 )
-
 
 plt.tight_layout()
 plt.show()
