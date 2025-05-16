@@ -101,7 +101,7 @@ Z = depth_grid
 
 norm = Normalize(vmin=wall_offset.min(), vmax=wall_offset.max())
 colors = cm.viridis(norm(wall_offset))
-ax2.plot_surface(Y, Z, X, facecolors=colors, rstride=3, cstride=3, shade=True, axlim_clip=True)
+ax2.plot_surface(Y, Z, X, facecolors=colors, rstride=1, cstride=1, shade=True, axlim_clip=True)
 ax2.view_init(elev=15, azim=-60)
 ax2.zaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val*1000:.0f} mm"))
 ax2.yaxis.set_major_formatter(FuncFormatter(lambda val, _: f"{val*1000:.0f} mm"))
@@ -200,7 +200,7 @@ span = SpanSelector(
     ax1,
     onselect,
     "horizontal",
-    onmove_callback=onmove,
+    #onmove_callback=onmove,
     useblit=True,
     props=dict(alpha=0.5),
     interactive=True,
