@@ -13,6 +13,11 @@
 #include "Localizer.h"
 #include "MissionController.h"
 
+BufferedSerial pc(USBTX, USBRX, 115200);
+FileHandle *mbed::mbed_override_console(int) {
+    return &pc;
+}
+
 int main() {
     ThisThread::sleep_for(1s);
 
@@ -43,13 +48,10 @@ int main() {
     FATFileSystem fs("sd");
 
     Localizer localizer(motor, encoder, imu);
-    MissionController controller(motor, localizer, button, motorsEnable);
+    MissionController controller(motor, localizer, button, motorsEnable, pc);
 
 
     Logger logger(sd, fs, detector, localizer, controller);
 
-
-    while(true){
-        ThisThread::sleep_for(100ms);
-    }
+    while(true){ThisThread::sleep_for(100ms);}
 }

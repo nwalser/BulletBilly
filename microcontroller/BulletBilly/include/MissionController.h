@@ -26,6 +26,7 @@ private:
     Localizer &localizer;
     DigitalIn &start;
     DigitalOut &motorsEnable;
+    BufferedSerial &pc;
 
     MissionControllerState state;
 
@@ -33,12 +34,13 @@ private:
     constexpr static const float TIRE_RADIUS = 0.030; // tire radius [m]
 
 public:
-    MissionController(DCMotor &motor, Localizer &localizer, DigitalIn &start, DigitalOut &motorsEnable) : 
+    MissionController(DCMotor &motor, Localizer &localizer, DigitalIn &start, DigitalOut &motorsEnable, BufferedSerial &pc) : 
         thread(osPriorityNormal, 2048),
         motor(motor),
         localizer(localizer),
         start(start),
-        motorsEnable(motorsEnable)
+        motorsEnable(motorsEnable),
+        pc(pc)
     {
         printf("[MissionController] Initializing \n");
 
@@ -71,21 +73,21 @@ private:
         state = MissionControllerState::Idle;
 
         while(true){
+            char c = 0;
+            if (pc.readable()) pc.read(&c, 1);
+
             MissionControllerData d;
-            LocalizerData localizerData = localizer.getData();
-
-
-            printf("%.3f %.3f \n", motor.getRotation(), localizerData.entryDepth);
-            
+            LocalizerData localizerData = localizer.getData();            
 
             switch(state){
                 case Idle: {
                     setVelocity(0.0);
 
                     // transition
-                    if(!start) {
+                    if(!start | (c == 's')) {
                         toState(FineScan);
                         localizer.reset();
+                        printf("[MissionController] Starting Scan \n");
                     };
                     break;
                 };
@@ -97,7 +99,10 @@ private:
                     setVelocity(-0.010);
 
                     // transition
-                    if(localizerData.entryDepth > 0.5) toState(Return);
+                    if((localizerData.entryDepth > 0.5) | (c == 's')) {
+                        toState(Return);
+                        printf("[MissionController] Returning \n");
+                    };
                     break;
                 };
                 case NoScan: {
@@ -108,12 +113,16 @@ private:
                     setVelocity(+0.200);
 
                     // transition
-                    if(localizerData.entryDepth <= 0.0) toState(Idle);
+                    if(localizerData.entryDepth <= 0.0) {
+                        toState(Idle);
+                        printf("[MissionController] Returned \n");
+                    };
                     break;
                 }
             };
 
             // update data
+            d.state = state;
             mutex.lock();
             data = d;
             mutex.unlock();

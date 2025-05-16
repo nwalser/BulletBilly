@@ -48,7 +48,7 @@ file_path = filedialog.askopenfilename()
 root.destroy()
 
 # LOAD RAW DATA
-parsed = read_data(file_path)[70:280] #TODO: automize data selection
+parsed = read_data(file_path) #TODO: automize data selection
 
 entry_depth = extract_value(parsed, 8)
 any_anomaly = extract_value(parsed, 7)

@@ -45,33 +45,6 @@ public:
             sd.deinit();
         }
 
-        // find unused log file slot
-        int counter = 0;
-        for(int i = 0; i < 999; i++){
-            char filename[32];
-            snprintf(filename, sizeof(filename), "/sd/log%d.txt", i);
-            
-            FILE *file = fopen(filename, "r");
-            
-            if (!file) {
-                counter = i;
-                break;
-            }
-
-            fclose(file);
-        }
-
-        // create new log file
-        char newLogFile[32];
-        snprintf(newLogFile, sizeof(newLogFile), "/sd/log%d.txt", counter);
-
-        logFile = fopen(newLogFile, "a");
-        if (logFile == NULL) {
-            printf("[Logger] Error opening log file.\n");
-            return;
-        }
-        printf("[Logger] %s \n", newLogFile);
-
         printf("[Logger] Initializing SD card done \n");
         thread.start(callback(this, &Logger::run));
     }
@@ -103,32 +76,74 @@ private:
         fprintf(logFile, "}");
     }
 
+    void openFile(){
+        // find unused log file slot
+        int counter = 0;
+        for(int i = 0; i < 999; i++){
+            char filename[32];
+            snprintf(filename, sizeof(filename), "/sd/log%d.txt", i);
+            
+            FILE *file = fopen(filename, "r");
+            
+            if (!file) {
+                counter = i;
+                break;
+            }
+
+            fclose(file);
+        }
+
+        // create new log file
+        char newLogFile[32];
+        snprintf(newLogFile, sizeof(newLogFile), "/sd/log%d.txt", counter);
+
+        logFile = fopen(newLogFile, "a");
+        if (logFile == NULL) {
+            printf("[Logger] Error opening log file.\n");
+            return;
+        }
+        printf("[Logger] %s \n", newLogFile);
+    }
+
+    void closeFile(){
+        fclose(logFile);
+        printf("[Logger] Closed log file.\n");
+    }
 
     void run(){
-        while(true){
-            // TODO maybe optimize this logging code
+        bool logging = false;
 
-            //continue;
+        while(true){
+            ThisThread::sleep_for(50ms);
 
             // get data for log
             AnomalyDetectorData anomalyData = detector.getData();
             LocalizerData localizerData = localizer.getData();
             MissionControllerData controllerData = controller.getData();
 
+            if((logging == true) & (controllerData.state != MissionControllerState::FineScan)){
+                closeFile();
+                logging = false;
+            }
+
+            if((logging == false) & (controllerData.state == MissionControllerState::FineScan)){
+                openFile();
+                logging = true;
+            }
+
+            if(!logging)
+                continue;
+
             // START ROW
             fprintf(logFile, "{");
 
             // measurement data
-            //logArray(anomalyData.scan);
             fprintf(logFile, "0");
             fprintf(logFile, ",");
-            //logArray(anomalyData.fit);
             fprintf(logFile, "0");
             fprintf(logFile, ",");
             logArray(anomalyData.offset);
-            //fprintf(logFile, "0");
             fprintf(logFile, ",");
-            //logArray(anomalyData.anomaly);
             fprintf(logFile, "0");
 
             // detection data
@@ -152,14 +167,11 @@ private:
             fprintf(logFile, "%d", localizerData.isSlipping);
 
             // mission controller data
-            // TODO
-
+            fprintf(logFile, ",");
+            fprintf(logFile, "%d", controllerData.state);
 
             fprintf(logFile, "}\n");
             // END ROW
-
-            ThisThread::sleep_for(50ms);
         }
     }
-
 };
