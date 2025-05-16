@@ -8,6 +8,7 @@
 
 #include "AnomalyDetector.h"
 #include "Localizer.h"
+#include "MissionController.h"
 
 class Logger {
 private:
@@ -18,14 +19,16 @@ private:
 
     AnomalyDetector &detector;
     Localizer &localizer;
+    MissionController &controller;
 
 public:
-    Logger(SDBlockDevice &sd, FATFileSystem &fs, AnomalyDetector &detector, Localizer &localizer) : 
+    Logger(SDBlockDevice &sd, FATFileSystem &fs, AnomalyDetector &detector, Localizer &localizer, MissionController &controller) : 
         thread(osPriorityNormal, 4096*4),
         sd(sd),
         fs(fs),
         detector(detector),
-        localizer(localizer)
+        localizer(localizer),
+        controller(controller)
     {
         printf("[Logger] Initializing SD card \n");
         int status = sd.init();
@@ -110,6 +113,7 @@ private:
             // get data for log
             AnomalyDetectorData anomalyData = detector.getData();
             LocalizerData localizerData = localizer.getData();
+            MissionControllerData controllerData = controller.getData();
 
             // START ROW
             fprintf(logFile, "{");
@@ -147,10 +151,12 @@ private:
             fprintf(logFile, ",");
             fprintf(logFile, "%d", localizerData.isSlipping);
 
+            // mission controller data
+            // TODO
+
+
             fprintf(logFile, "}\n");
             // END ROW
-
-            // printf("%.3f \n", anomalyData.centerX);
 
             ThisThread::sleep_for(50ms);
         }
